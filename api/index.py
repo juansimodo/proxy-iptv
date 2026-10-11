@@ -4,6 +4,7 @@ from urllib.parse import urlparse, parse_qs
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 REFERER = "https://tvf90.com/"
+ORIGIN = "https://tvf90.com"
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -18,11 +19,24 @@ class handler(BaseHTTPRequestHandler):
 
         headers = {
             "User-Agent": USER_AGENT,
-            "Referer": REFERER
+            "Referer": REFERER,
+            "Origin": ORIGIN,
+            "Accept": "*/*",
+            "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "cross-site"
         }
 
         try:
             res = requests.get(target_url, headers=headers, timeout=10)
+
+            # Si el CDN sigue bloqueando por IP, devolver el código HTTP original
+            if res.status_code != 200:
+                self.send_response(res.status_code)
+                self.end_headers()
+                self.wfile.write(res.content)
+                return
 
             if ".m3u8" in target_url:
                 content = res.text
@@ -43,7 +57,7 @@ class handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
             else:
-                self.send_response(res.status_code)
+                self.send_response(200)
                 self.send_header('Content-Type', res.headers.get('content-type', 'video/mp2t'))
                 self.end_headers()
                 self.wfile.write(res.content)
