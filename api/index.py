@@ -14,8 +14,11 @@ class handler(BaseHTTPRequestHandler):
         if not target_url:
             self.send_response(400)
             self.end_headers()
-            self.wfile.write(b"Falta la URL")
+            self.wfile.write(b"Falta el parametro url")
             return
+
+        # Limpiar posibles caracteres pegados de formato
+        target_url = target_url.split(']')[0].split(')')[0].strip()
 
         headers = {
             "User-Agent": USER_AGENT,
@@ -31,7 +34,6 @@ class handler(BaseHTTPRequestHandler):
         try:
             res = requests.get(target_url, headers=headers, timeout=10)
 
-            # Si el CDN sigue bloqueando por IP, devolver el código HTTP original
             if res.status_code != 200:
                 self.send_response(res.status_code)
                 self.end_headers()
